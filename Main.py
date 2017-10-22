@@ -209,7 +209,7 @@
 #
 import datetime as time
 import GenderBrain as gb
-from GenderBrain import GenderBrain, GenderDataset, DisposableGenderDataset
+from GenderBrain import ImageGraph, ImageNeuralNetwork, GenderDataset, DisposableGenderDataset
 import tensorflow as tf
 
 
@@ -224,6 +224,27 @@ def load_dataset_from_file(file, mode):
     dataset.load_from_file(file, mode=mode)
     return dataset
 
+
+def run():
+    raw_dataset = load_dataset_from_directory("Training/images")
+    training_dataset = DisposableGenderDataset(raw_dataset).repeat(1000, True)
+    brain = ImageNeuralNetwork([128, 128], 3, 2)
+    brain.build_graph(ImageGraph())
+
+    init = tf.global_variables_initializer()
+    with tf.Session() as sess:
+        sess.run(init)
+        for epoch in range(1000):
+            batch = training_dataset.get_next_batch(16)
+            if epoch % 10 == 0:
+                training_accuraccy = brain.evaluation.eval(feed_dict=brain.feed_dict(batch[0], batch[1], 1))
+                print(" step %d, accuraccy: %f " % (epoch, training_accuraccy))
+            brain.training.run(feed_dict=brain.feed_dict(batch[0], batch[1], 0.5))
+
+
+if __name__ == "__main__":
+    print("RUNNING")
+    run()
 
 #
 # def run():
@@ -291,7 +312,7 @@ def load_dataset_from_file(file, mode):
 #                         start_time = time.time()
 #                         feed_dict = fill_dict(
 #                             dataset,
-#                             images_placeholder, labels_placeholder, keep_prob_placeholder,
+#                             images_placeholder, labels_placeholder, probability,
 #                             0.5
 #                         )
 #                         _, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
@@ -321,24 +342,3 @@ def load_dataset_from_file(file, mode):
 #                             #     do_eval(sess,images_placeholder,labels_placeholder,train_dataset)
 #
 #     run_training()
-
-def run():
-    raw_dataset = load_dataset_from_directory("Training/images")
-    training_dataset = DisposableGenderDataset(raw_dataset).repeat(110, True)
-    brain = GenderBrain([128, 128], 3, 2, 0.5)
-
-    init = tf.global_variables_initializer()
-    with tf.Session() as sess:
-        sess.run(init)
-        for epoch in range(100):
-            batch = training_dataset.get_next_batch(32)
-            dict = brain.feed_dict(batch[0], batch[1])
-            if epoch % 10 == 0:
-                training_accuraccy = brain.evaluation.eval(feed_dict=dict)
-                print(" step %d, accuraccy: %f " % (epoch, training_accuraccy))
-            brain.training.run(feed_dict=dict)
-
-
-if __name__ == "__main__":
-    print("RUNNING")
-    run()
