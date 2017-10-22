@@ -67,15 +67,15 @@
 # def cnn_model_fn(features, labels, mode):
 #     """Model function for CNN."""
 #     # Input Layer
-#     # Reshape X to 4-D tensor: [batch_size, width, height, channels]
+#     # Reshape X to 4-D tensor: [size, width, height, channels]
 #     # MNIST images are 28x28 pixels, and have one color channel
 #     input_layer = tf.reshape(features["x"], [-1, 28, 28, 1])
 #
 #     # Convolutional Layer #1
 #     # Computes 32 features using a 5x5 filter with ReLU activation.
 #     # Padding is added to preserve width and height.
-#     # Input Tensor Shape: [batch_size, 28, 28, 1]
-#     # Output Tensor Shape: [batch_size, 28, 28, 32]
+#     # Input Tensor Shape: [size, 28, 28, 1]
+#     # Output Tensor Shape: [size, 28, 28, 32]
 #     conv1 = tf.layers.conv2d(
 #         inputs=input_layer,
 #         filters=32,
@@ -85,15 +85,15 @@
 #
 #     # Pooling Layer #1
 #     # First max pooling layer with a 2x2 filter and stride of 2
-#     # Input Tensor Shape: [batch_size, 28, 28, 32]
-#     # Output Tensor Shape: [batch_size, 14, 14, 32]
+#     # Input Tensor Shape: [size, 28, 28, 32]
+#     # Output Tensor Shape: [size, 14, 14, 32]
 #     pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
 #
 #     # Convolutional Layer #2
 #     # Computes 64 features using a 5x5 filter.
 #     # Padding is added to preserve width and height.
-#     # Input Tensor Shape: [batch_size, 14, 14, 32]
-#     # Output Tensor Shape: [batch_size, 14, 14, 64]
+#     # Input Tensor Shape: [size, 14, 14, 32]
+#     # Output Tensor Shape: [size, 14, 14, 64]
 #     conv2 = tf.layers.conv2d(
 #         inputs=pool1,
 #         filters=64,
@@ -103,19 +103,19 @@
 #
 #     # Pooling Layer #2
 #     # Second max pooling layer with a 2x2 filter and stride of 2
-#     # Input Tensor Shape: [batch_size, 14, 14, 64]
-#     # Output Tensor Shape: [batch_size, 7, 7, 64]
+#     # Input Tensor Shape: [size, 14, 14, 64]
+#     # Output Tensor Shape: [size, 7, 7, 64]
 #     pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=2)
 #
 #     # Flatten tensor into a get_full_batch of vectors
-#     # Input Tensor Shape: [batch_size, 7, 7, 64]
-#     # Output Tensor Shape: [batch_size, 7 * 7 * 64]
+#     # Input Tensor Shape: [size, 7, 7, 64]
+#     # Output Tensor Shape: [size, 7 * 7 * 64]
 #     pool2_flat = tf.reshape(pool2, [-1, 7 * 7 * 64])
 #
 #     # Dense Layer
 #     # Densely connected layer with 1024 neurons
-#     # Input Tensor Shape: [batch_size, 7 * 7 * 64]
-#     # Output Tensor Shape: [batch_size, 1024]
+#     # Input Tensor Shape: [size, 7 * 7 * 64]
+#     # Output Tensor Shape: [size, 1024]
 #     dense = tf.layers.dense(inputs=pool2_flat, units=1024, activation=tf.nn.relu)
 #
 #     # Add dropout operation; 0.6 probability that element will be kept
@@ -123,8 +123,8 @@
 #         inputs=dense, rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)
 #
 #     # Logits layer
-#     # Input Tensor Shape: [batch_size, 1024]
-#     # Output Tensor Shape: [batch_size, 10]
+#     # Input Tensor Shape: [size, 1024]
+#     # Output Tensor Shape: [size, 10]
 #     logits = tf.layers.dense(inputs=dropout, units=10)
 #
 #     predictions = {
@@ -185,7 +185,7 @@
 #     train_input_fn = tf.estimator.inputs.numpy_input_fn(
 #         x={"x": train_data},
 #         y=train_labels,
-#         batch_size=100,
+#         size=100,
 #         num_epochs=None,
 #         shuffle=True)
 #     mnist_classifier.train(
@@ -207,6 +207,138 @@
 #     print("RUNNING")
 #     tf.app.run()
 #
+import datetime as time
+import GenderBrain as gb
+from GenderBrain import GenderBrain, GenderDataset, DisposableGenderDataset
+import tensorflow as tf
 
-import GenderAI
-GenderAI.run()
+
+def load_dataset_from_directory(directory):
+    dataset = GenderDataset()
+    dataset.load_from_images(directory, [128, 128], 3)
+    return dataset
+
+
+def load_dataset_from_file(file, mode):
+    dataset = GenderDataset()
+    dataset.load_from_file(file, mode=mode)
+    return dataset
+
+
+#
+# def run():
+#     # Params is a dict with
+#     # params['conv1'] = int
+#     # params['conv2'] = int
+#     # params['fcl'] = int
+#     # params['shape'] = [int,int] (REQ)
+#     # params['channels] = int (REQ)
+#     # params['genders'] = int
+#     # params['keep'] = float
+#
+#     params = {
+#         "conv1": 32,
+#         "conv2": 64,
+#         "fcl": 1024,
+#         "shape": [128, 128],
+#         "channels": 3,
+#         "genders": 2,
+#         "keep": 0.5
+#     }
+#     batchsize = 16
+#     learning_rate = 0.1
+#     logdir = "/graph"
+#     max_steps = 100
+#
+#     from six.moves import xrange
+#
+#     def fill_dict(disposable_dataset, images_pl, labels_pl):
+#         batch = disposable_dataset.get_next_batch(batchsize)
+#         feed_dict = {
+#             images_pl: batch[0],
+#             labels_pl: batch[1]
+#         }
+#         return feed_dict
+#
+#     def do_eval(sess, eval_correct, images_placeholder, labels_placeholder, dataset):
+#         correct_count = 0
+#         steps_per_epoch = dataset.size // batchsize
+#         num_examples = steps_per_epoch * batchsize
+#         for step in xrange(steps_per_epoch):
+#             feed_dict = fill_dict(dataset, images_placeholder, labels_placeholder)
+#             correct_count += sess.run(eval_correct, feed_dict=feed_dict)
+#         precision = float(correct_count) / num_examples
+#         print(' Tested: %d Correct: %d Precision @ 1: %0.04f' % num_examples, correct_count, precision)
+#
+#     def run_training():
+#         raw_dataset = load_dataset_from_directory("Training/images")
+#         dataset = DisposableGenderDataset(raw_dataset)
+#         brain = GenderBrain()
+#         with tf.Graph().as_default():
+#             images_placeholder, labels_placeholder = brain.inputs(params)
+#             logits = brain.inference(images_placeholder, params)
+#             loss = brain.loss(logits, labels_placeholder)
+#             train_op = brain.training(loss, learning_rate)
+#             eval_correct = brain.evaluation(logits, labels_placeholder)
+#             summary = tf.summary.merge_all()
+#
+#             init = tf.global_variables_initializer()
+#             saver = tf.train.Saver()
+#             with tf.Session() as sess:
+#                 with tf.summary.FileWriter(logdir, sess.graph) as summary_writer:
+#                     sess.run(init)
+#                     for step in xrange(max_steps):
+#                         start_time = time.time()
+#                         feed_dict = fill_dict(
+#                             dataset,
+#                             images_placeholder, labels_placeholder, keep_prob_placeholder,
+#                             0.5
+#                         )
+#                         _, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
+#
+#                         duration = time.time() - start_time
+#
+#                         if step % 100 == 0:
+#                             print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
+#
+#                             summary_str = sess.run(summary, feed_dict=feed_dict)
+#                             summary_writer.add_summary(summary_str, step)
+#                             summary_writer.flush()
+#
+#                             # We could do this, but I don't have a validation, or test set For future me, a validation
+#                             #  set is used to check the training set and measure progress For future me, a test set
+#                             # is used to check for over fitting (a set never run through the learning,
+#                             # if it's producing significant losses, the graph is overfit)
+#
+#                             # if (step + 1) % 1000 == 0 or (step + 1) == max_steps:
+#                             #     checkpoint_file = os.path.join(logdir,'model.ckpt')
+#                             #     saver.save(sess,checkpoint_file,global_step=step)
+#                             #     print('Training Data Eval:')
+#                             #     do_eval(sess,images_placeholder,labels_placeholder,train_dataset)
+#                             #     print('Validation Data Eval:')
+#                             #     do_eval(sess,images_placeholder,labels_placeholder,train_dataset)
+#                             #     print('Training Data Eval:')
+#                             #     do_eval(sess,images_placeholder,labels_placeholder,train_dataset)
+#
+#     run_training()
+
+def run():
+    raw_dataset = load_dataset_from_directory("Training/images")
+    training_dataset = DisposableGenderDataset(raw_dataset).repeat(110, True)
+    brain = GenderBrain([128, 128], 3, 2, 0.5)
+
+    init = tf.global_variables_initializer()
+    with tf.Session() as sess:
+        sess.run(init)
+        for epoch in range(100):
+            batch = training_dataset.get_next_batch(32)
+            dict = brain.feed_dict(batch[0], batch[1])
+            if epoch % 10 == 0:
+                training_accuraccy = brain.evaluation.eval(feed_dict=dict)
+                print(" step %d, accuraccy: %f " % (epoch, training_accuraccy))
+            brain.training.run(feed_dict=dict)
+
+
+if __name__ == "__main__":
+    print("RUNNING")
+    run()
