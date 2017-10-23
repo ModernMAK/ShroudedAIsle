@@ -38,8 +38,9 @@
 # # scan.save("Scan.png", "PNG")
 # import ScanManip
 # # ScanManip.idea()
-
-from GenderBrain import ImageGraph, ImageNeuralNetwork, GenderDataset, DisposableGenderDataset
+from ImageGraph import ImageGraph
+from GenderAI import DisposableGenderDataset
+from ImageNeuralNetwork import ImageNeuralNetwork, GenderDataset
 import tensorflow as tf
 
 

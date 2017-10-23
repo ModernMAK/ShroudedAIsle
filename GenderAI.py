@@ -4,20 +4,27 @@ from os import path
 from PIL import Image
 
 
-def get_image_and_label_from_image(file_path):
-    gender = get_gender_from_image(file_path)
+# Returns a tuple of an image array and a one hot gender array
+def get_image_and_label_from_file(file_path):
+    # Get the gender from file path
+    gender = get_gender_from_file_path(file_path)
+    # Get image from file
     image = get_image_from_file(file_path)
+    # Make one hot
     gender_one_hot = get_one_hot(gender, 2)
     return image, gender_one_hot
 
 
-def get_image_and_label_from_image_and_reshape(file_path, shape, channels):
-    image, gender = get_image_and_label_from_image(file_path)
+# Returns a tuple of an image array and a one hot gender array
+def get_image_and_label_from_file_and_reshape(file_path, shape, channels):
+    # Gets the image and gender (one hot)
+    image, gender = get_image_and_label_from_file(file_path)
+    # Reshapes the image
     image = reshape_image(image, shape, channels)
     return image, gender
 
 
-def get_gender_from_image(file_path):
+def get_gender_from_file_path(file_path):
     folder_path = path.dirname(file_path)
     folder = path.basename(folder_path)
 
@@ -52,10 +59,6 @@ def get_one_hot(array, categories):
     return b
 
 
-def get_disposable_dataset(dataset):
-    return DisposableGenderDataset(dataset)
-
-
 class GenderDataset:
     # Class Stuff
     def __init__(self):
@@ -82,7 +85,7 @@ class GenderDataset:
         for (dirpath, dirnames, filenames) in os.walk(directory):
             for file in filenames:
                 filepath = path.join(dirpath, file)
-                image, gender = get_image_and_label_from_image_and_reshape(filepath, shape, channels)
+                image, gender = get_image_and_label_from_file_and_reshape(filepath, shape, channels)
                 image = image.flatten()
                 gender = gender.flatten()
                 images.append(image)
@@ -112,6 +115,7 @@ class DisposableGenderDataset(GenderDataset):
         self.batch_offset = 0
 
         self.repeat_shuffle = False
+        self.batch_shuffle = False
         self.repetitions = 0
         self.repeat_until = 1
 
@@ -124,6 +128,10 @@ class DisposableGenderDataset(GenderDataset):
         p = np.random.permutation(len(self.image_data))
         self.image_data = np.array(self.image_data[p])
         self.gender_data = np.array(self.gender_data[p])
+        return self
+
+    def shuffle_on_batch(self):
+        self.batch_shuffle = True
         return self
 
     def repeat(self, epochs=-1, shuffle_on_repeat=False):
@@ -158,6 +166,9 @@ class DisposableGenderDataset(GenderDataset):
                 self.repetitions += 1
                 if self.repeat_shuffle:
                     self.shuffle()
+
+        if self.batch_shuffle:
+            self.shuffle()
 
         result.image_data = np.array(img)
         result.gender_data = np.array(gen)
