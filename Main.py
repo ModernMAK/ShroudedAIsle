@@ -56,29 +56,78 @@ def load_dataset_from_file(file, mode):
     return dataset
 
 
-def run():
-    raw_dataset = load_dataset_from_directory("Training/images")
-    training_dataset = DisposableGenderDataset(raw_dataset).repeat(1000, True)
+def run(repititions=1000, epochs=1000, batch_size=64, shuffle_on_repeat=True, shuffle_on_batch=False):
+    raw_dataset = load_dataset_from_directory("Data/Training")
+    training_dataset = DisposableGenderDataset(raw_dataset).repeat(repititions, shuffle_on_repeat)
+    if shuffle_on_batch:
+        training_dataset = training_dataset.shuffle_on_batch()
     brain = ImageNeuralNetwork([128, 128], 3, 2)
     brain.build_graph(ImageGraph())
 
     init = tf.global_variables_initializer()
     with tf.Session() as sess:
         sess.run(init)
-        for epoch in range(1000):
-            batch = training_dataset.get_next_batch(16)
+        for epoch in range(epochs):
+            batch = training_dataset.get_next_batch(batch_size)
             if epoch % 10 == 0:
                 training_accuraccy = brain.evaluation.eval(feed_dict=brain.feed_dict(batch[0], batch[1], 1))
                 print(" step %d, accuraccy: %f " % (epoch, training_accuraccy))
             brain.training.run(feed_dict=brain.feed_dict(batch[0], batch[1], 0.5))
 
 
+def main():
+    from DataCollector import collect_gender_data_from_game, cull_gender_data
+    def print_menu():
+        print("<-< Shrouded AIsle >->")
+        print("1) Collect Gender Data")
+        print("2) Cull Collected Data")
+        print("3) Train Gender Recognition")
+        print("q) Quit")
+        print("----------------------")
+
+    def parse_cmd(cmd):
+
+        try:
+            str_cmd = str(cmd)
+        except:
+            str_cmd = ""
+        try:
+            int_cmd = int(cmd)
+        except:
+            int_cmd = 0
+
+        def cmd1():
+            val = int(input("How many iterations?\n"))
+            collect_gender_data_from_game(val, debounce=0.75, shuffle_colors=True)
+
+        def cmd2():
+            cull_gender_data()
+
+        def cmd3():
+            run()
+
+        if int_cmd == 1:
+            cmd1()
+        elif int_cmd == 2:
+            cmd2()
+        elif int_cmd == 3:
+            cmd3()
+        elif str_cmd in ["q", "x", "X", "Q", "quit", "QUIT", "Quit"]:
+            exit(0)
+        else:
+            print("I dont understand '%s'" % str(cmd))
+
+    while True:
+        print_menu()
+        code = input()
+        parse_cmd(code)
+
+
 if __name__ == "__main__":
     print("RUNNING")
-    from DataCollector import collect_gender_data_from_game
+    main()
     # run()
-    val = int(input("How many iterations?\n"))
-    collect_gender_data_from_game(val)
+
 #
 # def run():
 #     # Params is a dict with
