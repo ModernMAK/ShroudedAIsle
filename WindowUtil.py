@@ -1,156 +1,81 @@
-# Lifted from
+# HEAVILY MODIFIED FROM
 # https://stackoverflow.com/questions/10266281/obtain-active-window-using-python
 
+import win32gui
 
+
+# Returns ProcessIndex, Name
+def get_active_window_and_name():
+    window = win32gui.GetForegroundWindow()
+    window_name = win32gui.GetWindowText(window)
+    return window, window_name
+
+
+# Returns Name
 def get_active_window_name():
-    """
-    Get the currently active window.
-
-    Returns
-    -------
-    string :
-        Name of the currently active window.
-    """
-    import sys
-    active_window_name = None
-    if sys.platform in ['linux', 'linux2']:
-        # Alternatives: http://unix.stackexchange.com/q/38867/4784
-        try:
-            import wnck
-        except ImportError:
-            # logging.info("wnck not installed")
-            wnck = None
-        if wnck is not None:
-            screen = wnck.screen_get_default()
-            screen.force_update()
-            window = screen.get_active_window()
-            if window is not None:
-                pid = window.get_pid()
-                with open("/proc/{pid}/cmdline".format(pid=pid)) as f:
-                    active_window_name = f.read()
-        else:
-            try:
-                from gi.repository import Gtk, Wnck
-                gi = "Installed"
-            except ImportError:
-                # logging.info("gi.repository not installed")
-                gi = None
-            if gi is not None:
-                Gtk.init([])  # necessary if not using a Gtk.main() loop
-                screen = Wnck.Screen.get_default()
-                screen.force_update()  # recommended per Wnck documentation
-                active_window = screen.get_active_window()
-                pid = active_window.get_pid()
-                with open("/proc/{pid}/cmdline".format(pid=pid)) as f:
-                    active_window_name = f.read()
-    elif sys.platform in ['Windows', 'win32', 'cygwin']:
-        # http://stackoverflow.com/a/608814/562769
-        import win32gui
-        window = win32gui.GetForegroundWindow()
-        active_window_name = win32gui.GetWindowText(window)
-    elif sys.platform in ['Mac', 'darwin', 'os2', 'os2emx']:
-        # http://stackoverflow.com/a/373310/562769
-        from AppKit import NSWorkspace
-        active_window_name = (NSWorkspace.sharedWorkspace()
-                              .activeApplication()['NSApplicationName'])
-    else:
-        print("sys.platform={platform} is unknown. Please report."
-              .format(platform=sys.platform))
-        print(sys.version)
-    return active_window_name
-
-# Mofified from Lifted code
+    return get_active_window_and_name()[1]
 
 
+# Returns ProcessIndex
 def get_active_window():
-    def internal_get_active_window():
-        """
-            Get the currently active window.
-
-            Returns
-            -------
-            string :
-                Name of the currently active window.
-            """
-        import sys
-        active_window_name = None
-        if sys.platform in ['linux', 'linux2']:
-            # Alternatives: http://unix.stackexchange.com/q/38867/4784
-            try:
-                import wnck
-            except ImportError:
-                # logging.info("wnck not installed")
-                wnck = None
-            if wnck is not None:
-                screen = wnck.screen_get_default()
-                screen.force_update()
-                return screen.get_active_window()
-            else:
-                try:
-                    from gi.repository import Gtk, Wnck
-                    gi = "Installed"
-                except ImportError:
-                    # logging.info("gi.repository not installed")
-                    gi = None
-                if gi is not None:
-                    Gtk.init([])  # necessary if not using a Gtk.main() loop
-                    screen = Wnck.Screen.get_default()
-                    screen.force_update()  # recommended per Wnck documentation
-                    return screen.get_active_window()
-        elif sys.platform in ['Windows', 'win32', 'cygwin']:
-            # http://stackoverflow.com/a/608814/562769
-            import win32gui
-            return win32gui.GetForegroundWindow()
-        elif sys.platform in ['Mac', 'darwin', 'os2', 'os2emx']:
-            # http://stackoverflow.com/a/373310/562769
-            from AppKit import NSWorkspace
-            return (NSWorkspace.sharedWorkspace()
-                    .activeApplication())
-        else:
-            print("sys.platform={platform} is unknown. Please report."
-                  .format(platform=sys.platform))
-            print(sys.version)
-        return None
-
-    val = internal_get_active_window()
-    if val is None or val == 0:
-        return None
-    return val
-
-# Own code
+    return get_active_window_and_name()[0]
 
 
+# Returns ProcessIndex
 def get_window_named(name):
-    import win32gui
-    try:
-        result = win32gui.FindWindow(None, name)
-        # Assuming its returning 0 for null pointer,
-        # in any case, it returned 0 when something was not found, so... MAKE IT NONE!
-        if result is 0:
-            return None
-        else:
-            return result
-    except win32gui.error as e:
-        print(str(e))
+    result = win32gui.FindWindow(None, name)
+    # Assuming its returning 0 for null pointer,
+    # in any case, it returned 0 when something was not found, so... MAKE IT NONE!
+    if result is 0:
         return None
+    else:
+        return result
 
 
-def scan_window(hwnd):
-    import time
-    import win32gui
-    from PIL import ImageGrab
-    # Allows us to return to previously active window
+# Converts a min_max rect to a width_height rect
+def convert_to_width_height(bounds):
+    bounds[2] -= bounds[0]
+    bounds[3] -= bounds[1]
+    return bounds
+
+
+# Converts a width_height rect to a min_max rect
+def convert_to_min_max(bounds):
+    bounds[2] += bounds[0]
+    bounds[3] += bounds[1]
+    return bounds
+
+
+def get_window_rectangle(process, use_min_max=True):
+    # rect is a min_max rect
+    rect = win32gui.GetWindowRect(process)
+    # Quickly converts tuple to list
+    bounds = []
+    bounds.extend(rect)
+    # convert to width_height as needed
+    if not use_min_max:
+        bounds = convert_to_width_height(bounds)
+    return bounds
+
+
+# returns the previous active process for easy restoration
+def make_active_window(process):
     active = get_active_window()
-    win32gui.SetForegroundWindow(hwnd)
-    bbox = win32gui.GetWindowRect(hwnd)
-    # Pause for the camera!
-    time.sleep(0.1)
-    img = ImageGrab.grab(bbox)
-    time.sleep(0.1)
-    # Return to previous window
-    win32gui.SetForegroundWindow(active)
-    return img
+    win32gui.SetForegroundWindow(process)
+    return active
 
 
-
-    # print("Active window: %s" % str(get_active_window()))
+def map_partition_to_rect(partition, rect, rect_is_min_max=True):
+    if rect_is_min_max:
+        rect = convert_to_width_height(rect)
+    #Partition should be x,y, or x,y,w,h or l,u,r,d
+    #rect should always be l,u,r,d
+    for i in range(len(partition)):
+        # 2 + i % 2
+        # 2 ensure we are looking at W,H
+        # i % 2 ensures when we look at X and W, when i % 2 == 0,we inspect rect W,
+        # whereas when we look at Y and H, when i % 2 == 1, we inspect rect H
+        partition[i] *= rect[2 + i % 2]
+        partition[i] += rect[i % 2]
+        partition[i] = int(partition[i])
+    return partition
