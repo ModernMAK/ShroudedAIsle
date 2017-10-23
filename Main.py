@@ -75,9 +75,10 @@ def run():
 
 if __name__ == "__main__":
     print("RUNNING")
-    # run()
     from DataCollector import collect_gender_data_from_game
-    collect_gender_data_from_game()
+    # run()
+    val = int(input("How many iterations?\n"))
+    collect_gender_data_from_game(val)
 #
 # def run():
 #     # Params is a dict with

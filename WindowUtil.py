@@ -34,16 +34,20 @@ def get_window_named(name):
 
 # Converts a min_max rect to a width_height rect
 def convert_to_width_height(bounds):
-    bounds[2] -= bounds[0]
-    bounds[3] -= bounds[1]
-    return bounds
+    temp = []
+    temp.extend(bounds)
+    temp[2] -= temp[0]
+    temp[3] -= temp[1]
+    return temp
 
 
 # Converts a width_height rect to a min_max rect
 def convert_to_min_max(bounds):
-    bounds[2] += bounds[0]
-    bounds[3] += bounds[1]
-    return bounds
+    temp = []
+    temp.extend(bounds)
+    temp[2] += temp[0]
+    temp[3] += temp[1]
+    return temp
 
 
 def get_window_rectangle(process, use_min_max=True):
