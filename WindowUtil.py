@@ -136,20 +136,53 @@ def get_window_named(name):
 
 
 def scan_window(hwnd):
+    import win32gui
+    bbox = win32gui.GetWindowRect(hwnd)
+    return scan_window_absolute_partition(hwnd, bbox)
+
+def scan_window_absolute_partition(hwnd, partition):
     import time
     import win32gui
     from PIL import ImageGrab
     # Allows us to return to previously active window
     active = get_active_window()
     win32gui.SetForegroundWindow(hwnd)
-    bbox = win32gui.GetWindowRect(hwnd)
     # Pause for the camera!
     time.sleep(0.1)
-    img = ImageGrab.grab(bbox)
+    img = ImageGrab.grab(partition)
     time.sleep(0.1)
     # Return to previous window
     win32gui.SetForegroundWindow(active)
     return img
+
+def scan_window_relative_partition(hwnd, partition):
+    import time
+    import win32gui
+    from PIL import ImageGrab
+    bbox = win32gui.GetWindowRect(hwnd)
+
+    partition[0] += bbox[0]
+    partition[1] += bbox[1]
+    partition[2] += bbox[0]
+    partition[3] += bbox[1]
+
+    return scan_window_absolute_partition(hwnd,partition)
+
+def scan_window_scaled_partition(hwnd, partition):
+    import time
+    import win32gui
+    from PIL import ImageGrab
+    bbox = win32gui.GetWindowRect(hwnd)
+    w = bbox[2] - bbox[0]
+    h = bbox[3] - bbox[1]
+
+    partition[0] *= w
+    partition[1] *= h
+    partition[2] *= w
+    partition[3] *= h
+
+    return scan_window_absolute_partition(hwnd, partition)
+
 
 
 
