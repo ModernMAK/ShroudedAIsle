@@ -4,13 +4,6 @@ from win32con import MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, KEYEVENTF_KEYUP
 import WindowUtil
 
 
-#
-# def calculate_pos(button, size, reference):
-#     pos = [0, 0]
-#     for i in range(2):
-#         pos[i] = (button[i] + (size[i] / 2)) / reference[i]
-#     return pos
-
 def scale_to_reference(rect, reference):
     temp = []
     temp.extend(rect)
