@@ -15,17 +15,21 @@ class ImageNeuralNetwork:
                 self.probability = tf.placeholder(tf.float32)
                 self.images = tf.placeholder(tf.float32, shape=[None, self.flat_shape], name="images")
                 self.labels = tf.placeholder(tf.float32, shape=[None, categories], name="labels")
-        self.inference = None
-        self.loss = None
-        self.training = None
-        self.evaluation = None
 
-    def feed_dict(self, images, labels, probability):
-        feed_dict = {
-            self.images: images,
-            self.labels: labels,
-            self.probability: probability
-        }
+        self.t_inference = None
+        self.t_loss = None
+        self.t_training = None
+        self.t_evaluation = None
+        self.t_predict = None
+
+    def feed_dict(self, images=None, labels=None, probability=None):
+        feed_dict = {}
+        if images is not None:
+            feed_dict[self.images] = images
+        if labels is not None:
+            feed_dict[self.labels] = labels
+        if probability is not None:
+            feed_dict[self.probability] = probability
         return feed_dict
 
     def get_name_dict(self):
@@ -38,10 +42,11 @@ class ImageNeuralNetwork:
             "images": get_tensor_name(self.images),
             "labels": get_tensor_name(self.labels),
             "probability": get_tensor_name(self.probability),
-            "inference": get_tensor_name(self.inference),
-            "loss": get_tensor_name(self.loss),
-            "training": get_tensor_name(self.training),
-            "evaluation": get_tensor_name(self.evaluation)
+            "inference": get_tensor_name(self.t_inference),
+            "loss": get_tensor_name(self.t_loss),
+            "training": get_tensor_name(self.t_training),
+            "evaluation": get_tensor_name(self.t_evaluation),
+            "predict": get_tensor_name(self.t_predict)
         }
 
     def get_tensor_dict(self):

@@ -70,27 +70,27 @@ class GenderBrain(ImageNeuralNetwork):
             saver.save(session, file_path)
         else:
             saver.save(session, file_path, global_step=step)
-                # def overwrite():
-                #     from tensorflow.python.lib.io import file_io
-                #     if file_io.file_exists(self.graph_dir):
-                #         try:
-                #             file_io.delete_recursively(self.graph_dir)
-                #         except Exception as e:
-                #             # Try again
-                #             print(str(e), "\n", "Trying again.")
-                #             file_io.delete_recursively(self.graph_dir)
-                #
-                # overwrite()
-                # builder = saved_model_builder.SavedModelBuilder(self.graph_dir)
-                # builder.add_meta_graph_and_variables(
-                #     session,
-                #     [tag_constants.TRAINING],
-                #     signature_def_map=None,
-                #     assets_collection=None
-                # )
-                # builder.save()
-                # # with open(self.get_graph_dict(), 'w') as file:
-                # #     json.dump(self.graph_name_dict, file)
+            # def overwrite():
+            #     from tensorflow.python.lib.io import file_io
+            #     if file_io.file_exists(self.graph_dir):
+            #         try:
+            #             file_io.delete_recursively(self.graph_dir)
+            #         except Exception as e:
+            #             # Try again
+            #             print(str(e), "\n", "Trying again.")
+            #             file_io.delete_recursively(self.graph_dir)
+            #
+            # overwrite()
+            # builder = saved_model_builder.SavedModelBuilder(self.graph_dir)
+            # builder.add_meta_graph_and_variables(
+            #     session,
+            #     [tag_constants.TRAINING],
+            #     signature_def_map=None,
+            #     assets_collection=None
+            # )
+            # builder.save()
+            # # with open(self.get_graph_dict(), 'w') as file:
+            # #     json.dump(self.graph_name_dict, file)
 
     def load(self, session):
         loader = tf.train.Saver()
@@ -100,13 +100,13 @@ class GenderBrain(ImageNeuralNetwork):
         ckpt = tf.train.latest_checkpoint(file_path)
         print(str(ckpt))
         loader.restore(session, ckpt)
-            # saved_model_loader.load(
-            #     session,
-            #     [tag_constants.TRAINING],
-            #     self.graph_dir
-            # )
-            # with open(self.get_graph_dict(), 'r') as file:
-            #     self.graph_name_dict = json.load(file)
+        # saved_model_loader.load(
+        #     session,
+        #     [tag_constants.TRAINING],
+        #     self.graph_dir
+        # )
+        # with open(self.get_graph_dict(), 'r') as file:
+        #     self.graph_name_dict = json.load(file)
 
     def session(self):
         with self.graph.as_default() as g:
@@ -114,6 +114,7 @@ class GenderBrain(ImageNeuralNetwork):
 
     # Assumes a disposable data set was passed in
     def train(self, dataset, epochs, batch_size, *, print_every_nth_step=None, save_every_nth_step=None):
+        print("running training")
         steps_per_epoch = dataset.get_iterations_given_batch_size(batch_size)
         with self.session() as sess:
             sess.run(tf.global_variables_initializer())
@@ -129,16 +130,30 @@ class GenderBrain(ImageNeuralNetwork):
                     step = epoch * steps_per_epoch + epoch_step
                     batch = dataset.get_next_batch(batch_size)
 
-                    sess.run(self.training, feed_dict=self.feed_dict(batch[0], batch[1], 0.5))
+                    sess.run(self.t_training, feed_dict=self.feed_dict(batch[0], batch[1], 0.5))
 
                     if print_every_nth_step is not None and step % print_every_nth_step == 0:
-                        training_accuraccy = self.evaluation.eval(feed_dict=self.feed_dict(batch[0], batch[1], 1))
+                        training_accuraccy = self.t_evaluation.eval(feed_dict=self.feed_dict(batch[0], batch[1], 1))
                         print(" step %d (%d.%d), accuraccy: %f " % (step, epoch, epoch_step, training_accuraccy))
 
                     if save_every_nth_step is not None and step % save_every_nth_step == 0:
                         self.save(sess, step)
                         # print(" step %d saved " % step)
             self.save(sess)  # training.run(feed_dict=feed_dict_train)
+
+    #NOTE this returns the full dataset
+    def predict(self, dataset, batch_size):
+        print("running prediction")
+        steps_per_epoch = dataset.get_iterations_given_batch_size(batch_size)
+        predictions = []
+        with self.session() as sess:
+            sess.run(tf.global_variables_initializer())
+            self.load(sess)
+            for epoch_step in range(steps_per_epoch):
+                batch = dataset.get_next_batch(batch_size)
+                prediction = self.t_predict.eval(feed_dict=self.feed_dict(images=batch[0], probability=1.0))
+                predictions.extend(prediction)
+        return predictions
 
 #
 # def run(epochs=100, batch_size=64, shuffle_on_repeat=True):

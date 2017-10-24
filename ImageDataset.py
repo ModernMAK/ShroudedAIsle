@@ -46,6 +46,12 @@ def get_image_from_file(file):
     return numpy_norm_arr
 
 
+def get_image_from_file_and_reshape(file, shape, channels):
+    image = get_image_from_file(file)
+    image = reshape_image(image, shape, channels)
+    return image
+
+
 def reshape_image(image, shape, channels):
     reshape_size = shape.append(channels)
     return np.reshape(image, reshape_size)
@@ -79,6 +85,43 @@ class ImageDataSet:
 
     def load_from_images(self, directory, shape, channels):
         images = []
+        labels = []
+        batch_size = 0
+
+        for (dirpath, dirnames, filenames) in os.walk(directory):
+            for file in filenames:
+                filepath = path.join(dirpath, file)
+                image = get_image_from_file_and_reshape(filepath, shape, channels)
+                label = filepath
+                image = image.flatten()
+                images.append(image)
+                labels.append(label)
+                batch_size += 1
+
+        self.image_data = np.array(images)
+        self.label_data = np.array(labels)
+        self.size = batch_size
+
+    def load_from_file(self, file_path, mode=None, ):
+        data = np.load(file_path, mode, False, False)
+        self.size = data['size'][0]
+        self.label_data = data['gender']
+        self.image_data = data['image']
+
+        assert np.shape(self.label_data)[0] == self.size
+        assert np.shape(self.image_data)[0] == self.size
+
+    def save_to_file(self, file_path):
+        np.savez(file_path, size=self.size, image=self.image_data, gender=self.label_data)
+
+
+class ImageGenderDataSet(ImageDataSet):
+    # Class Stuff
+    def __init__(self):
+        super().__init__()
+
+    def load_from_images(self, directory, shape, channels):
+        images = []
         genders = []
         batch_size = 0
 
@@ -96,17 +139,6 @@ class ImageDataSet:
         self.label_data = np.array(genders)
         self.size = batch_size
 
-    def load_from_file(self, file_path, mode=None, ):
-        data = np.load(file_path, mode, False, False)
-        self.size = data['size'][0]
-        self.label_data = data['gender']
-        self.image_data = data['image']
-
-        assert np.shape(self.label_data)[0] == self.size
-        assert np.shape(self.image_data)[0] == self.size
-
-    def save_to_file(self, file_path):
-        np.savez(file_path, size=self.size, image=self.image_data, gender=self.label_data)
 
 class DisposableImageDataSet(ImageDataSet):
     def __init__(self, data_set=None):
@@ -122,7 +154,7 @@ class DisposableImageDataSet(ImageDataSet):
             self.label_data = np.copy(data_set.label_data)
             self.size = data_set.size
 
-    #resets batch offset and repititions
+    # resets batch offset and repititions
     def reset(self):
         self.repetitions = 0
         self.batch_offset = 0
@@ -148,7 +180,7 @@ class DisposableImageDataSet(ImageDataSet):
         if self.repetitions == self.repeat_until:
             raise IndexError()
 
-        result = ImageDataSet()
+        result = ImageGenderDataSet()
 
         img = []
         gen = []
