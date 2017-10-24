@@ -3,76 +3,117 @@
 # # but is rather complicated to complete (Manage Virtues, Find Vices, Maintain Relations, Complete Dreams)
 # # Because its a point in click game, I feel it is "pretty simple" to hack up some rudimentary AI to play it.
 # # That being said, I have no idea how to use Tensorflow, nor do I have access to an API to interact with the game.
-#
-# # This means I have a few problems to solve
-# # Input (Have to get a python library to emulate clicks)
-# # Gathering Information without API (Have to use Image Recognition)
-# # Decision making (unmentioned above, I need to come up with a hueristic to determine if the bot is making progress)
-#
-# # Lets look at the basics of what we have to gather, and how the AI must act to acquire this
-#
-# # ACHIEVING SATISFACTION
-# # To learn satisfaction, on the home screen, we can find it by hovering over the name of the house/their satisfaction note
-# # Once hovering, left of their name and satisfaction node, is their satisfaction value
-# # ADDITIONALLY, we can use this method to check inquiries, which can be accessed elsewhere
-#
-# # ACHIEVING VIRTUE
-# # To learn of the value of a virtue, we must hover over the virtue or the bar beneath
-# # The value is right of the virtue name once Hovered
-# # Additionally, to check if we are below the threshold, we have to check if the color is different OR if we are left of the bar
-#
-# # FIDNING SINNERS
-# # There are many ways to find sinners, the primary being inquiries
-#
-# from WindowUtil import get_window_named, scan_window
-# from time import sleep
-# # print("Please Open \"The Shrouded Isle\"")
-# # game = None
-# # while game is None:
-# #     print("Waiting...")
-# #     sleep(5)
-# #     game = get_window_named("The Shrouded Isle")
-# # print("\"The Shrouded Isle\" was opened")
-# #
-# # scan = scan_window(game)
-# # scan.save("Scan.png", "PNG")
-# import ScanManip
-# # ScanManip.idea()
-from ImageGraph import ImageGraph
-from GenderAI import DisposableGenderDataset
-from ImageNeuralNetwork import ImageNeuralNetwork, GenderDataset
+
+from ImageDataset import DisposableImageDataSet, ImageDataSet
+from ImageNeuralNetwork import ImageNeuralNetwork
 import tensorflow as tf
+from os.path import join, exists, dirname
+from os import getcwd
+from GenderBrain import GenderBrain
 
 
 def load_dataset_from_directory(directory):
-    dataset = GenderDataset()
+    dataset = ImageDataSet()
     dataset.load_from_images(directory, [128, 128], 3)
     return dataset
 
 
 def load_dataset_from_file(file, mode):
-    dataset = GenderDataset()
+    dataset = ImageDataSet()
     dataset.load_from_file(file, mode=mode)
     return dataset
 
 
-def run(repititions=1000, epochs=1000, batch_size=64, shuffle_on_repeat=True, shuffle_on_batch=False):
+def run_basic(epochs=100, batch_size=64):
     raw_dataset = load_dataset_from_directory("Data/Training")
-    training_dataset = DisposableGenderDataset(raw_dataset).repeat(repititions, shuffle_on_repeat)
-    if shuffle_on_batch:
-        training_dataset = training_dataset.shuffle_on_batch()
-    brain = ImageNeuralNetwork([128, 128], 3, 2)
-    brain.build_graph(ImageGraph())
+    training_dataset = DisposableImageDataSet(raw_dataset).repeat(epochs, shuffle_on_repeat=True)
 
-    init = tf.global_variables_initializer()
-    with tf.Session() as sess:
-        sess.run(init)
-        for epoch in range(epochs):
-            batch = training_dataset.get_next_batch(batch_size)
-            if epoch % 10 == 0:
-                training_accuraccy = brain.evaluation.eval(feed_dict=brain.feed_dict(batch[0], batch[1], 1))
-                print(" step %d, accuraccy: %f " % (epoch, training_accuraccy))
-            brain.training.run(feed_dict=brain.feed_dict(batch[0], batch[1], 0.5))
+    params = {
+        "learning_rate": 0.001
+    }
+    brain = GenderBrain("graph/gender", params=params)
+    # brain.build_graph()
+    brain.train(training_dataset, epochs, batch_size, print_every_nth_step=10, save_every_nth_step=10)
+
+
+#
+# def run(epochs=100, batch_size=64, shuffle_on_repeat=True):
+#     def try_save(sess, model, step, dict):
+#         saver = tf.train.Saver()
+#         saver.save(sess, model, global_step=step)
+#         # with open(model + ".dict", 'w') as file:
+#         #     for key, value in dict.items():
+#         #         file.write(key)
+#         #         file.write(value)
+#
+#     def try_restore(sess, model, step=0):
+#         # model_dir = dirname(model)
+#         file_name = "%s-%d.meta" % (model, step)
+#         loader = tf.train.import_meta_graph(file_name)
+#         # latest_checkpoint = tf.train.latest_checkpoint(model_dir)
+#         # loader = tf.train.import_meta_graph(model)
+#         # checkpoint = tf.train.latest_checkpoint(model)
+#         loader.restore(sess, file_name)
+#
+#
+#         # dict = {}
+#         # with open(model + ".dict", 'r') as file:
+#         #     prev = None
+#         #     for line in file:
+#         #         if prev is not None:
+#         #             dict[prev] = line
+#         #             prev = None
+#         #         else:
+#         #             prev = line
+#         # return dict
+#
+#     raw_dataset = load_dataset_from_directory("Data/Training")
+#     training_dataset = DisposableImageDataSet(raw_dataset).repeat(epochs, shuffle_on_repeat)
+#     brain = ImageNeuralNetwork([128, 128], 3, 2)
+#     params = {"learning_rate": 0.0001}
+#     brain.build_graph(ImageGraph(), params=params)
+#     iterations = training_dataset.get_iterations_given_batch_size(batch_size)
+#     print(training_dataset.size, "=>", iterations)
+#
+#     init = tf.global_variables_initializer()
+#     checkpoint = "graph/checkpoints/gender"
+#     dict = brain.get_name_dict()
+#     feed_dict_train = {}
+#     feed_dict_eval = {}
+#     training = None
+#     evaluation = None
+#     with tf.Session() as sess:
+#         def run_eval():
+#             if epoch % 2 == 0 and i % 10 == 0:
+#                 try_save(sess, checkpoint, epoch * iterations + i, dict)
+#                 training_accuraccy = evaluation.eval(feed_dict=feed_dict_eval)
+#                 print(" step %d.%d, accuraccy: %f " % (epoch, i, training_accuraccy))
+#
+#         def run_train():
+#             training.run(feed_dict=feed_dict_train)
+#
+#         try:
+#             dict = try_restore(sess, checkpoint)
+#             graph = tf.get_default_graph()
+#             training = graph.get_tensor_by_name(dict["training"])
+#             evaluation = graph.get_tensor_by_name(dict["evaluation"])
+#         except Exception as e:
+#             sess.run(init)
+#             dict = brain.get_name_dict()
+#             training = brain.training
+#             evaluation = brain.evaluation
+#             print(str(e))
+#
+#         for epoch in range(epochs):
+#             training_dataset.reset()
+#             for i in range(iterations):
+#                 batch = training_dataset.get_next_batch(batch_size)
+#                 feed_dict_eval = brain.feed_dict(batch[0], batch[1], 1)
+#                 feed_dict_train = brain.feed_dict(batch[0], batch[1], 0.5)
+#                 run_eval()
+#                 run_train()
+#
+#         try_save(sess, checkpoint, epochs * iterations)
 
 
 def main():
@@ -96,26 +137,26 @@ def main():
         except:
             int_cmd = 0
 
-        def cmd1():
+        def collect():
             val = int(input("How many iterations?\n"))
             collect_gender_data_from_game(val, debounce=0.75, shuffle_colors=True)
 
-        def cmd2():
+        def cull():
             cull_gender_data()
 
-        def cmd3():
-            run()
+        def train():
+            run_basic()
 
-        if int_cmd == 1:
-            cmd1()
-        elif int_cmd == 2:
-            cmd2()
-        elif int_cmd == 3:
-            cmd3()
+        if int_cmd == 1 or str_cmd in ["collect", "Collect", "COLLECT"]:
+            collect()
+        elif int_cmd == 2 or str_cmd in ["cull", "Cull", "CULL"]:
+            cull()
+        elif int_cmd == 3 or str_cmd in ["train", "Train", "TRAIN"]:
+            train()
         elif str_cmd in ["q", "x", "X", "Q", "quit", "QUIT", "Quit"]:
             exit(0)
         else:
-            print("I dont understand '%s'" % str(cmd))
+            print("I don't understand '%s'" % str(cmd))
 
     while True:
         print_menu()
@@ -179,10 +220,10 @@ if __name__ == "__main__":
 #         brain = GenderBrain()
 #         with tf.Graph().as_default():
 #             images_placeholder, labels_placeholder = brain.inputs(params)
-#             logits = brain.inference(images_placeholder, params)
-#             loss = brain.loss(logits, labels_placeholder)
+#             inference = brain.inference(images_placeholder, params)
+#             loss = brain.loss(inference, labels_placeholder)
 #             train_op = brain.training(loss, learning_rate)
-#             eval_correct = brain.evaluation(logits, labels_placeholder)
+#             eval_correct = brain.evaluation(inference, labels_placeholder)
 #             summary = tf.summary.merge_all()
 #
 #             init = tf.global_variables_initializer()

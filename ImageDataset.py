@@ -59,18 +59,18 @@ def get_one_hot(array, categories):
     return b
 
 
-class GenderDataset:
+class ImageDataSet:
     # Class Stuff
     def __init__(self):
         self.image_data = None
-        self.gender_data = None
+        self.label_data = None
         self.size = 0
 
     def __iter__(self):
-        return [self.image_data, self.gender_data]
+        return [self.image_data, self.label_data]
 
     def __getitem__(self, key):
-        return [self.image_data, self.gender_data][key]
+        return [self.image_data, self.label_data][key]
 
     # Functions
     def get_first_image_pixel_count(self):
@@ -93,45 +93,44 @@ class GenderDataset:
                 batch_size += 1
 
         self.image_data = np.array(images)
-        self.gender_data = np.array(genders)
+        self.label_data = np.array(genders)
         self.size = batch_size
 
     def load_from_file(self, file_path, mode=None, ):
         data = np.load(file_path, mode, False, False)
         self.size = data['size'][0]
-        self.gender_data = data['gender']
+        self.label_data = data['gender']
         self.image_data = data['image']
 
-        assert np.shape(self.gender_data)[0] == self.size
+        assert np.shape(self.label_data)[0] == self.size
         assert np.shape(self.image_data)[0] == self.size
 
     def save_to_file(self, file_path):
-        np.savez(file_path, size=self.size, image=self.image_data, gender=self.gender_data)
+        np.savez(file_path, size=self.size, image=self.image_data, gender=self.label_data)
 
-
-class DisposableGenderDataset(GenderDataset):
-    def __init__(self, dataset=None):
-        super(DisposableGenderDataset, self).__init__()
+class DisposableImageDataSet(ImageDataSet):
+    def __init__(self, data_set=None):
+        super(DisposableImageDataSet, self).__init__()
         self.batch_offset = 0
 
         self.repeat_shuffle = False
-        self.batch_shuffle = False
         self.repetitions = 0
         self.repeat_until = 1
 
-        if dataset is not None:
-            self.image_data = np.copy(dataset.image_data)
-            self.gender_data = np.copy(dataset.gender_data)
-            self.size = dataset.size
+        if data_set is not None:
+            self.image_data = np.copy(data_set.image_data)
+            self.label_data = np.copy(data_set.label_data)
+            self.size = data_set.size
+
+    #resets batch offset and repititions
+    def reset(self):
+        self.repetitions = 0
+        self.batch_offset = 0
 
     def shuffle(self):
         p = np.random.permutation(len(self.image_data))
         self.image_data = np.array(self.image_data[p])
-        self.gender_data = np.array(self.gender_data[p])
-        return self
-
-    def shuffle_on_batch(self):
-        self.batch_shuffle = True
+        self.label_data = np.array(self.label_data[p])
         return self
 
     def repeat(self, epochs=-1, shuffle_on_repeat=False):
@@ -140,12 +139,16 @@ class DisposableGenderDataset(GenderDataset):
         self.repetitions = 0
         return self
 
+    def get_iterations_given_batch_size(self, batch_size):
+        from math import ceil
+        return ceil(self.size / batch_size)
+
     def get_next_batch(self, batch_size):
         # Truncate if the next batch wont fit
         if self.repetitions == self.repeat_until:
             raise IndexError()
 
-        result = GenderDataset()
+        result = ImageDataSet()
 
         img = []
         gen = []
@@ -157,7 +160,7 @@ class DisposableGenderDataset(GenderDataset):
             # Add to batch
             index = count + offset
             img.append(self.image_data[index % self.size])
-            gen.append(self.gender_data[index % self.size])
+            gen.append(self.label_data[index % self.size])
 
             # Increment Offset
             self.batch_offset += 1
@@ -167,11 +170,8 @@ class DisposableGenderDataset(GenderDataset):
                 if self.repeat_shuffle:
                     self.shuffle()
 
-        if self.batch_shuffle:
-            self.shuffle()
-
         result.image_data = np.array(img)
-        result.gender_data = np.array(gen)
+        result.label_data = np.array(gen)
         result.size = batch_size
 
         return result
