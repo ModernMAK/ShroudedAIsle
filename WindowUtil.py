@@ -1,13 +1,17 @@
 # HEAVILY MODIFIED FROM
 # https://stackoverflow.com/questions/10266281/obtain-active-window-using-python
 
-import win32gui
+from win32gui import GetWindowText, GetForegroundWindow, FindWindow, GetWindowRect, SetForegroundWindow
+
+
+def get_window_name(window):
+    return GetWindowText(window)
 
 
 # Returns ProcessIndex, Name
 def get_active_window_and_name():
-    window = win32gui.GetForegroundWindow()
-    window_name = win32gui.GetWindowText(window)
+    window = GetForegroundWindow()
+    window_name = get_window_name(window)
     return window, window_name
 
 
@@ -23,7 +27,7 @@ def get_active_window():
 
 # Returns ProcessIndex
 def get_window_named(name):
-    result = win32gui.FindWindow(None, name)
+    result = FindWindow(None, name)
     # Assuming its returning 0 for null pointer,
     # in any case, it returned 0 when something was not found, so... MAKE IT NONE!
     if result is 0:
@@ -52,7 +56,7 @@ def convert_to_min_max(bounds):
 
 def get_window_rectangle(process, use_min_max=True):
     # rect is a min_max rect
-    rect = win32gui.GetWindowRect(process)
+    rect = GetWindowRect(process)
     # Quickly converts tuple to list
     bounds = []
     bounds.extend(rect)
@@ -65,15 +69,15 @@ def get_window_rectangle(process, use_min_max=True):
 # returns the previous active process for easy restoration
 def make_active_window(process):
     active = get_active_window()
-    win32gui.SetForegroundWindow(process)
+    SetForegroundWindow(process)
     return active
 
 
 def map_partition_to_rect(partition, rect, rect_is_min_max=True):
     if rect_is_min_max:
         rect = convert_to_width_height(rect)
-    #Partition should be x,y, or x,y,w,h or l,u,r,d
-    #rect should always be l,u,r,d
+    # Partition should be x,y, or x,y,w,h or l,u,r,d
+    # rect should always be l,u,r,d
     for i in range(len(partition)):
         # 2 + i % 2
         # 2 ensure we are looking at W,H

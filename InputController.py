@@ -170,7 +170,7 @@ class InputController:
 
     # Toggles opening the settings panel
     def click_settings_color(self):
-        #When -1, does the same thing
+        # When -1, does the same thing
         self.click_settings_color_select()
 
     # Color is an int, -1 toggles the select panel
@@ -195,7 +195,7 @@ class InputController:
             self.click_main_start_confirmation(True)
 
     # Refined, Highlevel stuff that performs basic actions
-    def skip_intro_cutscene(self):
+    def skip_cutscene(self):
         self.click_intro_skip()
         self.click_intro_skip()
 
@@ -214,3 +214,100 @@ class InputController:
 
     def close_settings(self):
         self.click_settings_button(1)
+
+    def click_game_cathedral_selection_confirmation(self):
+        self.click_game_cathedral_selection(0)
+
+    # From Bottom (0) to Top (1 atm)
+    def click_game_cathedral_selection(self, option):
+        button_positions = [[70, 462], [70, 408]]
+        button_size = [600, 54]
+        reference_window_size = [1282, 747]
+
+        click_position = calculate_pos(button_positions[option], button_size, reference_window_size)
+        self.click(click_position, True)
+
+    def click_game_house_member(self, member):
+        button_positions = [
+            [240, 137], [436, 137],
+            [134, 374], [269, 374], [406, 374], [538, 374]
+        ]
+        button_size = [128, 176]
+        reference_window_size = [1282, 747]
+        click_position = calculate_pos(button_positions[member], button_size, reference_window_size)
+        self.click(click_position, True)
+
+    # Inquiry = 0, Appoint = 1, Rename = 2
+    def click_game_house_option(self, option):
+        button_positions = [
+            [764, 520], [998, 520], [998, 460]
+        ]
+        button_size = [200, 54]
+        reference_window_size = [1282, 747]
+        click_position = calculate_pos(button_positions[option], button_size, reference_window_size)
+        self.click(click_position, True)
+
+    def click_game_start_season(self):
+        button_positions = [996, 46]
+        button_size = [268, 64]
+        reference_window_size = [1282, 747]
+        click_position = calculate_pos(button_positions, button_size, reference_window_size)
+        self.click(click_position, True)
+
+    def click_court_advisor(self, advisor):
+        button_positions = [
+            [124, 210], [344, 210], [564, 210], [784, 210], [1004, 210],
+        ]
+        button_size = [150, 174]
+        reference_window_size = [1282, 747]
+        click_position = calculate_pos(button_positions[advisor], button_size, reference_window_size)
+        self.click(click_position, True)
+
+    def click_court_begin_month(self):
+        button_positions = [916, 94]
+        button_size = [212, 56]
+        reference_window_size = [1282, 747]
+        click_position = calculate_pos(button_positions, button_size, reference_window_size)
+        self.click(click_position, True)
+
+    def click_court_next_result(self):
+        button_positions = [956, 94]
+        button_size = [172, 56]
+        reference_window_size = [1282, 747]
+        click_position = calculate_pos(button_positions, button_size, reference_window_size)
+        self.click(click_position, True)
+
+    def click_court_relations_result(self):
+        button_positions = [916, 94]
+        button_size = [212, 56]
+        reference_window_size = [1282, 747]
+        click_position = calculate_pos(button_positions, button_size, reference_window_size)
+        self.click(click_position, True)
+
+    def click_sacrifice_advisor(self, advisor):
+        button_positions = [
+            [188, 422], [380, 422], [574, 422], [768, 422], [960, 422],
+        ]
+        button_size = [136, 160]
+        reference_window_size = [1282, 747]
+        click_position = calculate_pos(button_positions[advisor], button_size, reference_window_size)
+        self.click(click_position, True)
+
+    # Sacrifice = 0, Spare = 1, X = 2 (Is there a difference between 1 and 2, i don't know)
+    def click_sacrifice_confirmation(self, option):
+        button_positions = [
+            [428, 492], [706, 492], [986, 158],
+        ]
+        button_size = [
+            [176, 46], [172, 46], [52, 52]
+        ]
+        reference_window_size = [1282, 747]
+        click_position = calculate_pos(button_positions[option], button_size[option], reference_window_size)
+        self.click(click_position, True)
+
+    def click_sacrifice_results(self):
+        button_positions = [716, 500]
+        button_size = [210, 54]
+        reference_window_size = [1282, 747]
+        click_position = calculate_pos(button_positions, button_size, reference_window_size)
+        self.click(click_position, True)

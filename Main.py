@@ -9,6 +9,8 @@ from os.path import join, basename
 from os import getcwd, rename
 from GenderBrain import GenderBrain
 from time import sleep
+from DataCollector import print_menu_proto, parse_command, collection_menu
+
 
 def load_dataset_from_directory(directory, is_prediction=False):
     if is_prediction:
@@ -67,39 +69,26 @@ def run_prediction(batch_size=32):
         rename(file_path, join(join(getcwd(), out_dir), file_name))
         sleep(0.01)
 
+
 def main():
-    from DataCollector import collect_gender_data_from_game, cull_gender_data
     def print_menu():
-        print("<-< Shrouded AIsle >->")
-        print("1) Collect Gender Data")
-        print("2) Cull Collected Data")
-        print("3) Train Gender Recognition")
-        print("4) Predict Gender")
-        print("Q) Quit")
-        print("----------------------")
+        print_menu_proto(
+            "Main Menu",
+            [
+                "1) Collect Data",
+                "2) Train Gender Recognition",
+                "3) Predict Gender",
+                "Q) Quit"
+            ])
 
     def parse_cmd(cmd):
+        int_cmd, str_cmd = parse_command(cmd)
 
-        try:
-            str_cmd = str(cmd)
-        except:# We honestly dont care how it failed
-            str_cmd = ""
-        try:
-            int_cmd = int(cmd)
-        except:# We honestly dont care how it failed, we would only care if they both failed
-            int_cmd = 0
-
-        def collect():
-            val = int(input("How many iterations?\n"))
-            collect_gender_data_from_game(val, debounce=0.75, shuffle_colors=True)
-
-        if int_cmd == 1 or str_cmd in ["co", "CO", "collect", "Collect", "COLLECT"]:
-            collect()
-        elif int_cmd == 2 or str_cmd in ["cu", "CU", "cull", "Cull", "CULL"]:
-            cull_gender_data()
-        elif int_cmd == 3 or str_cmd in ["T", "t", "train", "Train", "TRAIN"]:
+        if int_cmd == 1 or str_cmd in ["c", "C", "collect", "Collect", "COLLECT"]:
+            collection_menu()
+        elif int_cmd == 2 or str_cmd in ["T", "t", "train", "Train", "TRAIN"]:
             run_training()
-        elif int_cmd == 4 or str_cmd in ["P", "p", "predict", "Predict", "PREDICT"]:
+        elif int_cmd == 3 or str_cmd in ["P", "p", "predict", "Predict", "PREDICT"]:
             run_prediction()
         elif str_cmd in ["q", "x", "X", "Q", "quit", "QUIT", "Quit"]:
             exit(0)
