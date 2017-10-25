@@ -9,7 +9,7 @@ from os.path import join, basename
 from os import getcwd, rename
 from GenderBrain import GenderBrain
 from time import sleep
-from DataCollector import print_menu_proto, parse_command, collection_menu
+from DataCollector import print_menu_proto, parse_command, collection_menu, DataCollector, get_game
 
 
 def load_dataset_from_directory(directory, is_prediction=False):
@@ -71,6 +71,9 @@ def run_prediction(batch_size=32):
 
 
 def main():
+    game = get_game()
+    dc = DataCollector("Data",game=game)
+
     def print_menu():
         print_menu_proto(
             "Main Menu",
@@ -85,7 +88,7 @@ def main():
         int_cmd, str_cmd = parse_command(cmd)
 
         if int_cmd == 1 or str_cmd in ["c", "C", "collect", "Collect", "COLLECT"]:
-            collection_menu()
+            collection_menu(dc)
         elif int_cmd == 2 or str_cmd in ["T", "t", "train", "Train", "TRAIN"]:
             run_training()
         elif int_cmd == 3 or str_cmd in ["P", "p", "predict", "Predict", "PREDICT"]:

@@ -60,6 +60,7 @@ class InputController:
 
     # Moving the mouse doesn't cause debounce, it still brings focus however
     def move(self, pos, should_map_pos=False):
+        print(pos, should_map_pos, self.debounce, self.game_window)
         if should_map_pos:
             rect = self.get_window_rectangle_and_focus()
             pos = WindowUtil.map_partition_to_rect(pos, rect)

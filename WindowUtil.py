@@ -68,6 +68,7 @@ def get_window_rectangle(process, use_min_max=True):
 
 # returns the previous active process for easy restoration
 def make_active_window(process):
+    print(process)
     active = get_active_window()
     SetForegroundWindow(process)
     return active
